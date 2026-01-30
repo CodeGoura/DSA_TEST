@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSA Challenge Platform</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const Icon = ({ children, className }) => (
+            <span className={className}>{children}</span>
+        );
+
+        const Clock = (p) => <Icon {...p}>⏱</Icon>;
+        const Code = (p) => <Icon {...p}>&lt;/&gt;</Icon>;
+        const CheckCircle = (p) => <Icon {...p}>✔</Icon>;
+        const XCircle = (p) => <Icon {...p}>✖</Icon>;
+        const Download = (p) => <Icon {...p}>⬇</Icon>;
+        const Play = (p) => <Icon {...p}>▶</Icon>;
+        const Send = (p) => <Icon {...p}>➤</Icon>;
+
+        const codeTemplates = {
+            javascript: "function solution() {\n  // code\n}",
+            python: "def solution():\n    pass",
+            cpp: "#include <stdio.h>\nint main() {\n    return 0;\n}",
+            java: "public class Main {\n    public static void main(String[] args) {\n    }\n}",
+            c: "#include <stdio.h>\nint main() {\n    return 0;\n}"
+        };
+
+        const DSATestPlatform = () => {
+            const [screen, setScreen] = useState('entry');
+            const [studentName, setStudentName] = useState('');
+            const [currentRound, setCurrentRound] = useState(1);
+            const [currentQuestion, setCurrentQuestion] = useState(0);
+            const [timeLeft, setTimeLeft] = useState(600);
+            const [code, setCode] = useState('');
+            const [testResults, setTestResults] = useState([]);
+            const [submissions, setSubmissions] = useState([]);
+            const [roundResults, setRoundResults] = useState({ round1: [], round2: [] });
+            const [language, setLanguage] = useState("javascript");
+
+            const languageMap = {
+                javascript: 63,
+                python: 71,
+                cpp: 54,
+                java: 62,
+                c: 50
+            };
+
+            const round1Questions = [
+                {
+                    id: 1,
+                    title: "Two Sum",
+                    difficulty: "Easy",
+                    description: "Given an array of integers nums and an integer target, return indices of the two numbers that add up to target.",
+                    template: "function solution(nums, target) {\n  // Your code here\n}",
+                    testCases: [
+                        { input: { nums: [2, 7, 11, 15], target: 9 }, expected: [0, 1] },
+                        { input: { nums: [3, 2, 4], target: 6 }, expected: [1, 2] },
+                        { input: { nums: [3, 3], target: 6 }, expected: [0, 1] }
+                    ],
+                    solution: "function twoSum(nums, target) {\n  const map = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const complement = target - nums[i];\n    if (map.has(complement)) {\n      return [map.get(complement), i];\n    }\n    map.set(nums[i], i);\n  }\n  return [];\n}"
+                },
+                {
+                    id: 2,
+                    title: "Reverse Linked List",
+                    difficulty: "Easy",
+                    description: "Reverse a singly linked list. Input: array representation of list. Output: reversed array.",
+                    template: "function solution(arr) {\n  // Your code here\n  \n}",
+                    testCases: [
+                        { input: { arr: [1, 2, 3, 4, 5] }, expected: [5, 4, 3, 2, 1] },
+                        { input: { arr: [1, 2] }, expected: [2, 1] },
+                        { input: { arr: [1] }, expected: [1] }
+                    ],
+                    solution: "function reverseList(arr) {\n  return arr.reverse();\n}"
+                },
+                {
+                    id: 3,
+                    title: "Valid Parentheses",
+                    difficulty: "Medium",
+                    description: "Given a string containing just '(', ')', '{', '}', '[' and ']', determine if the input string is valid.",
+                    template: "function solution(s) {\n  // Your code here\n  \n}",
+                    testCases: [
+                        { input: { s: "()" }, expected: true },
+                        { input: { s: "()[]{}" }, expected: true },
+                        { input: { s: "(]" }, expected: false }
+                    ],
+                    solution: "function isValid(s) {\n  const stack = [];\n  const pairs = { '(': ')', '{': '}', '[': ']' };\n  for (let char of s) {\n    if (pairs[char]) {\n      stack.push(char);\n    } else {\n      const last = stack.pop();\n      if (pairs[last] !== char) return false;\n    }\n  }\n  return stack.length === 0;\n}"
+                },
+                {
+                    id: 4,
+                    title: "Maximum Subarray",
+                    difficulty: "Medium",
+                    description: "Find the contiguous subarray with the largest sum and return its sum.",
+                    template: "function solution(nums) {\n  // Your code here\n  \n}",
+                    testCases: [
+                        { input: { nums: [-2, 1, -3, 4, -1, 2, 1, -5, 4] }, expected: 6 },
+                        { input: { nums: [1] }, expected: 1 },
+                        { input: { nums: [5, 4, -1, 7, 8] }, expected: 23 }
+                    ],
+                    solution: "function maxSubArray(nums) {\n  let maxSum = nums[0];\n  let currentSum = nums[0];\n  for (let i = 1; i < nums.length; i++) {\n    currentSum = Math.max(nums[i], currentSum + nums[i]);\n    maxSum = Math.max(maxSum, currentSum);\n  }\n  return maxSum;\n}"
+                },
+                {
+                    id: 5,
+                    title: "Binary Search",
+                    difficulty: "Hard",
+                    description: "Given a sorted array and a target value, return the index if found, else return -1.",
+                    template: "function solution(nums, target) {\n  // Your code here\n  \n}",
+                    testCases: [
+                        { input: { nums: [-1, 0, 3, 5, 9, 12], target: 9 }, expected: 4 },
+                        { input: { nums: [-1, 0, 3, 5, 9, 12], target: 2 }, expected: -1 },
+                        { input: { nums: [5], target: 5 }, expected: 0 }
+                    ],
+                    solution: "function search(nums, target) {\n  let left = 0, right = nums.length - 1;\n  while (left <= right) {\n    const mid = Math.floor((left + right) / 2);\n    if (nums[mid] === target) return mid;\n    if (nums[mid] < target) left = mid + 1;\n    else right = mid - 1;\n  }\n  return -1;\n}"
+                },
+                {
+                    id: 6,
+                    title: "Merge Sorted Arrays",
+                    difficulty: "Hard",
+                    description: "Merge two sorted arrays into one sorted array.",
+                    template: "function solution(arr1, arr2) {\n  // Your code here\n  \n}",
+                    testCases: [
+                        { input: { arr1: [1, 3, 5], arr2: [2, 4, 6] }, expected: [1, 2, 3, 4, 5, 6] },
+                        { input: { arr1: [1], arr2: [2] }, expected: [1, 2] },
+                        { input: { arr1: [1, 2, 3], arr2: [4, 5, 6] }, expected: [1, 2, 3, 4, 5, 6] }
+                    ],
+                    solution: "function merge(arr1, arr2) {\n  return [...arr1, ...arr2].sort((a, b) => a - b);\n}"
+                },
+                {
+                    id: 7,
+                    title: "Find Duplicate",
+                    difficulty: "Normal",
+                    description: "Given an array containing n + 1 integers where each integer is between 1 and n, find the duplicate.",
+                    template: "function solution(nums) {\n  // Your code here\n  \n}",
+                    testCases: [
+                        { input: { nums: [1, 3, 4, 2, 2] }, expected: 2 },
+                        { input: { nums: [3, 1, 3, 4, 2] }, expected: 3 },
+                        { input: { nums: [1, 1] }, expected: 1 }
+                    ],
+                    solution: "function findDuplicate(nums) {\n  const seen = new Set();\n  for (let num of nums) {\n    if (seen.has(num)) return num;\n    seen.add(num);\n  }\n  return -1;\n}"
+                },
+                {
+                    id: 8,
+                    title: "Palindrome Number",
+                    difficulty: "Normal",
+                    description: "Determine whether an integer is a palindrome without converting to string.",
+                    template: "function solution(x) {\n  // Your code here\n  \n}",
+                    testCases: [
+                        { input: { x: 121 }, expected: true },
+                        { input: { x: -121 }, expected: false },
+                        { input: { x: 10 }, expected: false }
+                    ],
+                    solution: "function isPalindrome(x) {\n  if (x < 0) return false;\n  let original = x, reversed = 0;\n  while (x > 0) {\n    reversed = reversed * 10 + x % 10;\n    x = Math.floor(x / 10);\n  }\n  return original === reversed;\n}"
+                }
+            ];
+
+            const round2Questions = [
+                {
+                    id: 9,
+                    title: "Longest Substring Without Repeating Characters",
+                    difficulty: "Hard",
+                    description: "Find the length of the longest substring without repeating characters.",
+                    template: "function solution(s) {\n  // Your code here\n  \n}",
+                    testCases: [
+                        { input: { s: "abcabcbb" }, expected: 3 },
+                        { input: { s: "bbbbb" }, expected: 1 },
+                        { input: { s: "pwwkew" }, expected: 3 }
+                    ],
+                    solution: "function lengthOfLongestSubstring(s) {\n  const set = new Set();\n  let maxLen = 0, left = 0;\n  for (let right = 0; right < s.length; right++) {\n    while (set.has(s[right])) {\n      set.delete(s[left]);\n      left++;\n    }\n    set.add(s[right]);\n    maxLen = Math.max(maxLen, right - left + 1);\n  }\n  return maxLen;\n}"
+                },
+                {
+                    id: 10,
+                    title: "Trapping Rain Water",
+                    difficulty: "Hard",
+                    description: "Given n non-negative integers representing elevation map, compute how much water it can trap.",
+                    template: "function solution(height) {\n  // Your code here\n  \n}",
+                    testCases: [
+                        { input: { height: [0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1] }, expected: 6 },
+                        { input: { height: [4, 2, 0, 3, 2, 5] }, expected: 9 },
+                        { input: { height: [1, 2, 3] }, expected: 0 }
+                    ],
+                    solution: "function trap(height) {\n  let left = 0, right = height.length - 1;\n  let leftMax = 0, rightMax = 0, water = 0;\n  while (left < right) {\n    if (height[left] < height[right]) {\n      leftMax = Math.max(leftMax, height[left]);\n      water += leftMax - height[left];\n      left++;\n    } else {\n      rightMax = Math.max(rightMax, height[right]);\n      water += rightMax - height[right];\n      right--;\n    }\n  }\n  return water;\n}"
+                },
+                {
+                    id: 11,
+                    title: "Word Break",
+                    difficulty: "Hard",
+                    description: "Given a string and a dictionary, determine if string can be segmented into words from dictionary.",
+                    template: "function solution(s, wordDict) {\n  // Your code here\n  \n}",
+                    testCases: [
+                        { input: { s: "leetcode", wordDict: ["leet", "code"] }, expected: true },
+                        { input: { s: "applepenapple", wordDict: ["apple", "pen"] }, expected: true },
+                        { input: { s: "catsandog", wordDict: ["cats", "dog", "sand", "and", "cat"] }, expected: false }
+                    ],
+                    solution: "function wordBreak(s, wordDict) {\n  const dp = new Array(s.length + 1).fill(false);\n  dp[0] = true;\n  for (let i = 1; i <= s.length; i++) {\n    for (let j = 0; j < i; j++) {\n      if (dp[j] && wordDict.includes(s.substring(j, i))) {\n        dp[i] = true;\n        break;\n      }\n    }\n  }\n  return dp[s.length];\n}"
+                },
+                {
+                    id: 12,
+                    title: "LRU Cache",
+                    difficulty: "Hard",
+                    description: "Implement LRU cache with get and put operations. Return array of results.",
+                    template: "function solution(capacity, operations) {\n  // operations is array of ['get', key] or ['put', key, value]\n  // Your code here\n  \n}",
+                    testCases: [
+                        {
+                            input: { capacity: 2, operations: [['put', 1, 1], ['put', 2, 2], ['get', 1], ['put', 3, 3], ['get', 2]] },
+                            expected: [null, null, 1, null, -1]
+                        }
+                    ],
+                    solution: "function lruCache(capacity, operations) {\n  const cache = new Map();\n  const results = [];\n  for (let op of operations) {\n    if (op[0] === 'put') {\n      if (cache.has(op[1])) cache.delete(op[1]);\n      cache.set(op[1], op[2]);\n      if (cache.size > capacity) {\n        cache.delete(cache.keys().next().value);\n      }\n      results.push(null);\n    } else {\n      if (cache.has(op[1])) {\n        const val = cache.get(op[1]);\n        cache.delete(op[1]);\n        cache.set(op[1], val);\n        results.push(val);\n      } else {\n        results.push(-1);\n      }\n    }\n  }\n  return results;\n}"
+                },
+                {
+                    id: 13,
+                    title: "Median of Two Sorted Arrays",
+                    difficulty: "Hard",
+                    description: "Find the median of two sorted arrays.",
+                    template: "function solution(nums1, nums2) {\n  // Your code here\n  \n}",
+                    testCases: [
+                        { input: { nums1: [1, 3], nums2: [2] }, expected: 2.0 },
+                        { input: { nums1: [1, 2], nums2: [3, 4] }, expected: 2.5 },
+                        { input: { nums1: [], nums2: [1] }, expected: 1.0 }
+                    ],
+                    solution: "function findMedianSortedArrays(nums1, nums2) {\n  const merged = [...nums1, ...nums2].sort((a, b) => a - b);\n  const mid = Math.floor(merged.length / 2);\n  return merged.length % 2 === 0 ? (merged[mid - 1] + merged[mid]) / 2 : merged[mid];\n}"
+                }
+            ];
+
+            const questions = currentRound === 1 ? round1Questions : round2Questions;
+
+            useEffect(() => {
+                if (screen === 'round1' || screen === 'round2') {
+                    const timer = setInterval(() => {
+                        setTimeLeft(prev => {
+                            if (prev <= 1) {
+                                handleTimeUp();
+                                return 0;
+                            }
+                            return prev - 1;
+                        });
+                    }, 1000);
+                    return () => clearInterval(timer);
+                }
+            }, [screen]);
+
+            useEffect(() => {
+                if (!questions[currentQuestion]) return;
+
+                if (language === "javascript") {
+                    setCode(questions[currentQuestion].template);
+                } else {
+                    setCode(codeTemplates[language]);
+                }
+            }, [currentQuestion, currentRound, language]);
+
+            const handleTimeUp = () => {
+                if (currentRound === 1) {
+                    finishRound1();
+                } else {
+                    finishRound2();
+                }
+            };
+
+            const runOnJudge0 = async (sourceCode, input = "") => {
+                const res = await fetch(
+                    "https://ce.judge0.com/submissions?base64_encoded=false&wait=true",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            language_id: languageMap[language],
+                            source_code: sourceCode,
+                            stdin: input
+                        })
+                    }
+                );
+
+                return res.json();
+            };
+
+            const normalize = (val) =>
+                typeof val === "string" ? val.trim() : JSON.stringify(val);
+
+            const runTests = async () => {
+                const question = questions[currentQuestion];
+                const results = [];
+
+                for (let i = 0; i < question.testCases.length; i++) {
+                    const tc = question.testCases[i];
+
+                    try {
+                        let wrappedCode = "";
+                        const inputValues = Object.values(tc.input);
+
+                        if (language === "javascript") {
+                            wrappedCode = `
+${code}
+
+const args = ${JSON.stringify(inputValues)};
+const result = solution(...args);
+console.log(JSON.stringify(result));
+`;
+                        } else if (language === "python") {
+                            wrappedCode = `
+import json
+
+${code}
+
+args = ${JSON.stringify(inputValues)}
+result = solution(*args)
+print(json.dumps(result))
+`;
+                        } else if (language === "cpp") {
+                            wrappedCode = `
+#include <bits/stdc++.h>
+using namespace std;
+
+${code}
+
+int main() {
+  vector<string> args = ${JSON.stringify(
+                                inputValues.map(v => JSON.stringify(v))
+                            )};
+
+  auto result = solution(${inputValues.join(",")});
+  cout << result;
+  return 0;
+}
+`;
+                        } else if (language === "java") {
+                            wrappedCode = `
+import java.util.*;
+
+${code}
+
+public class Main {
+  public static void main(String[] args) {
+
+    Object result = solution(${inputValues
+                                    .map(v => JSON.stringify(v))
+                                    .join(",")});
+
+    System.out.println(result);
+  }
+}
+`;
+                        } else if (language === "c") {
+                            wrappedCode = `
+#include <stdio.h>
+
+${code}
+
+int main() {
+  printf("%d", solution(${inputValues.join(",")}));
+  return 0;
+}
+`;
+                        }
+
+                        const res = await runOnJudge0(wrappedCode, "");
+
+                        if (res.compile_output || res.stderr) {
+                            results.push({
+                                testCase: i + 1,
+                                passed: false,
+                                error: res.compile_output || res.stderr
+                            });
+                            continue;
+                        }
+
+                        const output = res.stdout?.trim();
+                        const expected = JSON.stringify(tc.expected);
+
+                        results.push({
+                            testCase: i + 1,
+                            input: tc.input,
+                            expected,
+                            actual: output,
+                            passed: normalize(output) === normalize(tc.expected)
+                        });
+
+                    } catch (err) {
+                        results.push({
+                            testCase: i + 1,
+                            passed: false,
+                            error: err.message
+                        });
+                    }
+                }
+
+                setTestResults(results);
+            };
+
+            const submitAnswer = () => {
+                const question = questions[currentQuestion];
+                const allPassed = testResults.length > 0 && testResults.every(r => r.passed);
+
+                const submission = {
+                    questionId: question.id,
+                    title: question.title,
+                    code: code,
+                    correct: allPassed,
+                    testResults: testResults,
+                    solution: question.solution
+                };
+
+                setSubmissions([...submissions, submission]);
+
+                if (currentQuestion < questions.length - 1) {
+                    setCurrentQuestion(currentQuestion + 1);
+                    setTestResults([]);
+                } else {
+                    if (currentRound === 1) {
+                        finishRound1();
+                    } else {
+                        finishRound2();
+                    }
+                }
+            };
+
+            const finishRound1 = () => {
+                const correctCount = submissions.filter(s => s.correct).length;
+                setRoundResults({
+                    ...roundResults,
+                    round1: submissions
+                });
+
+                if (correctCount >= 5) {
+                    setScreen('qualified');
+                } else {
+                    setScreen('results');
+                }
+            };
+
+            const finishRound2 = () => {
+                setRoundResults({
+                    ...roundResults,
+                    round2: submissions
+                });
+                setScreen('results');
+            };
+
+            const startRound2 = () => {
+                setCurrentRound(2);
+                setCurrentQuestion(0);
+                setTimeLeft(900);
+                setSubmissions([]);
+                setTestResults([]);
+                setScreen('round2');
+            };
+
+            const downloadResults = () => {
+                const results = currentRound === 1 ? roundResults.round1 : roundResults.round2;
+                const correctCount = results.filter(r => r.correct).length;
+                const totalQuestions = results.length;
+
+                let content = `DSA Challenge Results\n`;
+                content += `=====================\n\n`;
+                content += `Participant: ${studentName}\n`;
+                content += `Round: ${currentRound}\n`;
+                content += `Score: ${correctCount}/${totalQuestions}\n`;
+                content += `Date: ${new Date().toLocaleString()}\n\n`;
+                content += `Question Details:\n`;
+                content += `=================\n\n`;
+
+                results.forEach((result, index) => {
+                    content += `${index + 1}. ${result.title}\n`;
+                    content += `   Status: ${result.correct ? 'CORRECT ✓' : 'WRONG ✗'}\n`;
+                    if (!result.correct) {
+                        content += `   \n   Correct Solution:\n${result.solution}\n`;
+                    }
+                    content += `\n`;
+                });
+
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${studentName}_Round${currentRound}_Results.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
+
+            const question = questions[currentQuestion];
+
+            if (screen === 'entry') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+                            <div className="text-center mb-8">
+                                <Code className="w-16 h-16 text-purple-600 mx-auto mb-4" />
+                                <h1 className="text-3xl font-bold text-gray-800 mb-2">DSA Challenge</h1>
+                                <p className="text-gray-600">Test coding skills</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <input
+                                    type="text"
+                                    placeholder="Enter your name or group name"
+                                    value={studentName}
+                                    onChange={(e) => setStudentName(e.target.value)}
+                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+                                />
+
+                                <div className="bg-purple-50 p-4 rounded-lg">
+                                    <h3 className="font-semibold text-purple-900 mb-2">Challenge Format:</h3>
+                                    <ul className="text-sm text-purple-800 space-y-1">
+                                        <li>• Round 1: 8 questions in 10 minutes</li>
+                                        <li>• Need 5 correct to qualify for Round 2</li>
+                                        <li>• Round 2: 5 questions, 15 minutes each</li>
+                                        <li>• All questions are Normal difficulty</li>
+                                    </ul>
+                                </div>
+
+                                <button
+                                    onClick={() => {
+                                        if (studentName.trim()) {
+                                            setScreen('round1');
+                                        }
+                                    }}
+                                    disabled={!studentName.trim()}
+                                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                >
+                                    Start Challenge
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (screen === 'qualified') {
+                const correctCount = roundResults.round1.filter(r => r.correct).length;
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-green-900 via-teal-900 to-blue-900 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+                            <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-4" />
+                            <h2 className="text-3xl font-bold text-gray-800 mb-4">Congratulations!</h2>
+                            <p className="text-xl text-gray-600 mb-2">You scored {correctCount}/8</p>
+                            <p className="text-gray-500 mb-6">You're qualified for Round 2!</p>
+
+                            <div className="space-y-3">
+                                <button
+                                    onClick={downloadResults}
+                                    className="w-full flex items-center justify-center gap-2 bg-gray-600 text-white py-3 rounded-lg font-semibold hover:bg-gray-700"
+                                >
+                                    <Download className="w-5 h-5" />
+                                    Download Round 1 Results
+                                </button>
+
+                                <button
+                                    onClick={startRound2}
+                                    className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-teal-700"
+                                >
+                                    Start Round 2
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (screen === 'results') {
+                const results = currentRound === 1 ? roundResults.round1 : roundResults.round2;
+                const correctCount = results.filter(r => r.correct).length;
+                const passed = currentRound === 1 ? correctCount >= 5 : true;
+
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4">
+                        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
+                            <div className="text-center mb-8">
+                                {passed && currentRound === 1 ? (
+                                    <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                                ) : currentRound === 2 ? (
+                                    <CheckCircle className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+                                ) : (
+                                    <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                                )}
+                                <h2 className="text-3xl font-bold text-gray-800 mb-2">
+                                    Round {currentRound} Complete
+                                </h2>
+                                <p className="text-xl text-gray-600">
+                                    {studentName} - Score: {correctCount}/{results.length}
+                                </p>
+                            </div>
+
+                            <div className="space-y-4 mb-8">
+                                {results.map((result, index) => (
+                                    <div key={index} className={`border-2 rounded-lg p-4 ${result.correct ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'}`}>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h3 className="font-semibold text-gray-800">{result.title}</h3>
+                                            {result.correct ? (
+                                                <CheckCircle className="w-6 h-6 text-green-600" />
+                                            ) : (
+                                                <XCircle className="w-6 h-6 text-red-600" />
+                                            )}
+                                        </div>
+                                        {!result.correct && (
+                                            <div className="mt-3">
+                                                <p className="text-sm font-semibold text-gray-700 mb-1">Correct Solution:</p>
+                                                <pre className="text-xs bg-gray-800 text-green-400 p-3 rounded overflow-x-auto">
+                                                    {result.solution}
+                                                </pre>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <button
+                                onClick={downloadResults}
+                                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-gray-600 to-gray-100 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700"
+                            >
+                                <Download className="w-5 h-5" />
+                                Download Results
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gray-100">
+                    {/* Header */}
+                    <div className="bg-gray-900 text-gray-100 p-4 shadow-md">
+                        <div className="max-w-7xl mx-auto flex items-center justify-between">
+                            <div>
+                                <h1 className="text-2xl font-bold">{studentName}</h1>
+                                <p className="text-sm opacity-90">Round {currentRound} - Question {currentQuestion + 1}/{questions.length}</p>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-lg">
+                                    <Clock className="w-5 h-5" />
+                                    <span className="text-xl font-bold">{formatTime(timeLeft)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {/* Problem Description */}
+                        <div className="bg-white rounded-lg shadow-lg p-6">
+                            <div className="mb-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h2 className="text-2xl font-bold text-gray-800">{question.title}</h2>
+                                    <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-semibold">
+                                        {question.difficulty}
+                                    </span>
+                                </div>
+                                <p className="text-gray-600">{question.description}</p>
+                            </div>
+
+                            <div className="mb-4">
+                                <h3 className="font-semibold text-gray-800 mb-2">Test Cases:</h3>
+                                <div className="space-y-2">
+                                    {question.testCases.map((tc, i) => (
+                                        <div key={i} className="bg-gray-50 p-3 rounded text-sm">
+                                            <p className="text-gray-600">
+                                                <span className="font-semibold">Input:</span> {JSON.stringify(tc.input)}
+                                            </p>
+                                            <p className="text-gray-600">
+                                                <span className="font-semibold">Expected:</span> {JSON.stringify(tc.expected)}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {testResults.length > 0 && (
+                                <div className="mt-4">
+                                    <h3 className="font-semibold text-gray-800 mb-2">Test Results:</h3>
+                                    <div className="space-y-2">
+                                        {testResults.map((result, i) => (
+                                            <div key={i} className={`p-3 rounded text-sm ${result.passed ? 'bg-green-50' : 'bg-red-50'}`}>
+                                                {result.error ? (
+                                                    <p className="text-red-600">{result.error}</p>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="font-semibold">Test Case {result.testCase}</span>
+                                                            {result.passed ? (
+                                                                <CheckCircle className="w-4 h-4 text-green-600" />
+                                                            ) : (
+                                                                <XCircle className="w-4 h-4 text-red-600" />
+                                                            )}
+                                                        </div>
+                                                        {!result.passed && (
+                                                            <>
+                                                                <p className="text-gray-600">Expected: {JSON.stringify(result.expected)}</p>
+                                                                <p className="text-gray-600">Got: {JSON.stringify(result.actual)}</p>
+                                                            </>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Code Editor */}
+                        <div className="bg-white rounded-lg shadow-lg p-6">
+                            <h3 className="font-semibold text-gray-800 mb-3">Code Editor</h3>
+                            <select
+                                value={language}
+                                onChange={(e) => setLanguage(e.target.value)}
+                                className="mb-3 w-full border rounded p-2"
+                            >
+                                <option value="javascript">JavaScript</option>
+                                <option value="python">Python</option>
+                                <option value="cpp">C++</option>
+                                <option value="java">Java</option>
+                                <option value="c">C</option>
+                            </select>
+
+                            <textarea
+                                value={code}
+                                onChange={(e) => setCode(e.target.value)}
+                                className="w-full h-96 p-4 font-mono text-sm bg-gray-900 text-green-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                spellCheck="false"
+                            />
+
+                            <div className="mt-4 flex gap-3">
+                                <button
+                                    onClick={runTests}
+                                    className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700"
+                                >
+                                    <Play className="w-5 h-5" />
+                                    Run Tests
+                                </button>
+
+                                <button
+                                    onClick={submitAnswer}
+                                    disabled={testResults.length === 0}
+                                    className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <Send className="w-5 h-5" />
+                                    Submit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<DSATestPlatform />);
+    </script>
+</body>
+
+</html>
